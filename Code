@@ -1,1 +1,357 @@
+/*K. M. Nafiur Rahman
+ID: 23303206*/
+
+#include <iostream>
+#include <string>
+#include <fstream>
+
+using namespace std;
+
+class Account
+{
+protected:
+    string name;
+    string accountNumber;
+    double balance;
+    double spendingLimit;
+
+public:
+
+    Account() : name(""), accountNumber(""), balance(0), spendingLimit(0) {}
+
+    Account(string n, string a, double b) : name(n), accountNumber(a), balance(b), spendingLimit(0) {}
+
+    void deposit(double amount)
+    {
+        balance += amount;
+    }
+
+    virtual bool withdraw(double amount)
+    {
+        if (spendingLimit != -1 && amount > spendingLimit)
+        {
+            cout << "Withdrawal Exceeds The Set Spending Limit." << endl;
+            return false;
+        }
+        if (balance >= amount)
+        {
+            balance -= amount;
+            return true;
+        }
+        else
+        {
+            cout << "Insufficient Balance." << endl;
+            return false;
+        }
+    }
+
+    void displayStatement()
+    {
+        cout << "\nAccount Holder: " << name << endl;
+        cout << "Account Number: " << accountNumber << endl;
+        cout << "Balance: " << balance << endl;
+
+        ofstream outFile("AccountStatement.txt", ios::app);
+        if (outFile.is_open())
+        {
+            outFile << "Account Holder: " << name << endl;
+            outFile << "Account Number: " << accountNumber << endl;
+            outFile << "Balance: " << balance << endl;
+            outFile << "Spending Limit: " << spendingLimit << endl;
+            outFile << "--------------------------" << endl;
+            outFile.close();
+            cout << "Statement Saved To File Successfully." << endl;
+        }
+        else
+        {
+            cout << "Unable To Open File To Save Statement." << endl;
+        }
+    }
+
+    void setSpendingLimit(double limit)
+    {
+        spendingLimit = limit;
+        cout << "Spending Limit Set To " << spendingLimit << endl;
+    }
+
+    bool transferAmount(Account& recipient, double amount)
+    {
+        if (withdraw(amount))
+        {
+            recipient.deposit(amount);
+            cout << "Transfer Successful!" << endl;
+            return true;
+        }
+        cout << "Transfer Failed." << endl;
+        return false;
+    }
+
+    string getName()
+    {
+        return name;
+    }
+
+    string getAccountNumber()
+    {
+        return accountNumber;
+    }
+
+    double getBalance()
+    {
+        return balance;
+    }
+};
+
+class SavingsAccount : public Account
+{
+private:
+    double interestRate;
+
+public:
+    SavingsAccount(string n, string a, double b, double r) : Account(n, a, b), interestRate(r) {}
+
+    void calculateInterest()
+    {
+        double interest = balance * interestRate / 100;
+        deposit(interest);
+    }
+};
+
+int main()
+{
+    const int MAX_ACCOUNTS = 1000;
+    Account accounts[MAX_ACCOUNTS];
+    int numAccounts = 0;
+
+    int choice;
+    do
+    {
+        cout << "\nBanking System Menu:\n";
+        cout << "1. Create Account\n";
+        cout << "2. Deposit\n";
+        cout << "3. Withdraw\n";
+        cout << "4. Display Statement\n";
+        cout << "5. Show Account Status\n";
+        cout << "6. Set Spending Limit\n";
+        cout << "7. Transfer Amount\n";
+        cout << "8. Exit\n";
+        cout << "9. Delete Account\n";
+        cout << "Enter Your Choice: ";
+        cin >> choice;
+
+        switch (choice)
+        {
+            case 1: //Create Account
+            {
+                string name, accountNumber;
+                double balance;
+                int accountType;
+
+                cout << "\nEnter Name: ";
+                cin.ignore();
+                getline(cin, name);
+                cout << "Enter Account Number: ";
+                getline(cin, accountNumber);
+                cout << "Enter Initial Balance: ";
+                cin >> balance;
+                cout << "Select Account Type:\n";
+                cout << "1. Savings Account\n";
+                cout << "2. Current Account\n";
+                cin >> accountType;
+
+                if (accountType == 1)
+                {
+                    double interestRate;
+                    cout << "Enter Interest Rate: ";
+                    cin >> interestRate;
+                    accounts[numAccounts] = SavingsAccount(name, accountNumber, balance, interestRate);
+                }
+                else if (accountType == 2)
+                {
+                    accounts[numAccounts] = SavingsAccount(name, accountNumber, balance, 0);  // Same As Saving, No Overdraft
+                }
+                else
+                {
+                    cout << "Invalid Account Type." << endl;
+                    break;
+                }
+
+                cout << "Welcome!! Account Created Successfully" << endl;
+                numAccounts++;
+                break;
+            }
+            case 2: //Deposit
+            {
+                string accountNumber;
+                double amount;
+                cout << "\nEnter Account Number: ";
+                cin.ignore();
+                getline(cin, accountNumber);
+                cout << "Enter Amount To Deposit: ";
+                cin >> amount;
+                for (int i = 0; i < numAccounts; i++)
+                {
+                    if (accounts[i].getAccountNumber() == accountNumber)
+                    {
+                        accounts[i].deposit(amount);
+                        cout << "Deposit Successful." << endl;
+                        break;
+                    }
+                }
+                break;
+            }
+            case 3: //Withdraw
+            {
+                string accountNumber;
+                double amount;
+                cout << "\nEnter Account Number: ";
+                cin.ignore();
+                getline(cin, accountNumber);
+                cout << "Enter Amount To Withdraw: ";
+                cin >> amount;
+                for (int i = 0; i < numAccounts; i++)
+                {
+                    if (accounts[i].getAccountNumber() == accountNumber)
+                    {
+                        if (accounts[i].withdraw(amount))
+                        {
+                            cout << "Withdrawal Successful." << endl;
+                        }
+                        break;
+                    }
+                }
+                break;
+            }
+            case 4: //Display Statement
+            {
+                string accountNumber;
+                cout << "\nEnter Account Number: ";
+                cin.ignore();
+                getline(cin, accountNumber);
+                for (int i = 0; i < numAccounts; i++)
+                {
+                    if (accounts[i].getAccountNumber() == accountNumber)
+                    {
+                        accounts[i].displayStatement();
+                        break;
+                    }
+                }
+                break;
+            }
+            case 5: //Show Account Status
+            {
+                string accountNumber;
+                cout << "Enter Your Account Number: ";
+                cin.ignore();
+                getline(cin, accountNumber);
+                for (int i = 0; i < numAccounts; i++)
+                {
+                    if (accounts[i].getAccountNumber() == accountNumber)
+                    {
+                        cout << "\nAccount Holder: " << accounts[i].getName() << endl;
+                        cout << "Account Number: " << accounts[i].getAccountNumber() << endl;
+                        cout << "Balance: " << accounts[i].getBalance() << endl;
+                        break;
+                    }
+                }
+                break;
+            }
+            case 6: //Set Spending Limit
+            {
+                string accountNumber;
+                double limit;
+                cout << "\nEnter Account Number: ";
+                cin.ignore();
+                getline(cin, accountNumber);
+                cout << "Enter Spending Limit: ";
+                cin >> limit;
+                for (int i = 0; i < numAccounts; i++)
+                {
+                    if (accounts[i].getAccountNumber() == accountNumber)
+                    {
+                        accounts[i].setSpendingLimit(limit);
+                        break;
+                    }
+                }
+                break;
+            }
+            case 7: //Transfer Amount
+            {
+                string senderAccountNumber, recipientAccountNumber;
+                double amount;
+                cout << "\nEnter Your Account Number: ";
+                cin.ignore();
+                getline(cin, senderAccountNumber);
+                cout << "Enter Recipient Account Number: ";
+                getline(cin, recipientAccountNumber);
+                cout << "Enter Amount To Transfer: ";
+                cin >> amount;
+
+                for (int i = 0; i < numAccounts; i++)
+                {
+                    if (accounts[i].getAccountNumber() == senderAccountNumber)
+                    {
+                        for (int j = 0; j < numAccounts; j++)
+                        {
+                            if (accounts[j].getAccountNumber() == recipientAccountNumber)
+                            {
+                                if (accounts[i].transferAmount(accounts[j], amount))
+                                {
+                                    cout << "Amount Transferred Successfully!" << endl;
+                                }
+                                else
+                                {
+                                    cout << "Transfer Failed." << endl;
+                                }
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+                break;
+            }
+            case 9: //Delete Account
+            {
+                string accountNumber;
+                cout << "\nEnter Account Number To Delete: ";
+                cin.ignore();
+                getline(cin, accountNumber);
+
+                bool accountDeleted = false;
+                for (int i = 0; i < numAccounts; i++)
+                {
+                    if (accounts[i].getAccountNumber() == accountNumber)
+                    {
+                        for (int j = i; j < numAccounts - 1; j++)
+                        {
+                            accounts[j] = accounts[j + 1];
+                        }
+                        numAccounts--;
+                        accountDeleted = true;
+                        cout << "Account Deleted Successfully." << endl;
+                        break;
+                    }
+                }
+
+                if (!accountDeleted)
+                {
+                    cout << "Account Not Found." << endl;
+                }
+                break;
+            }
+            case 8: //Exit
+            {
+                cout << "Exiting The System. Thank You For Using The Banking Management System!" << endl;
+                break;
+            }
+            default:
+                cout << "Invalid Choice. Please Select A Valid Option." << endl;
+                break;
+        }
+    } while (choice != 8);
+
+    return 0;
+}
+
 
